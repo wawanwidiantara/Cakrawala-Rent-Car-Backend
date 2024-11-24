@@ -1,4 +1,4 @@
-# Cakrawala-Rent-Backend
+# Cakrawala-Rent-Car-Backend
 
 Cakrawala-Rent-Backend is a Flask-based backend application for managing ID card extraction and related functionalities. This project includes features like user authentication, ID card image upload, OCR-based data extraction, and more.
 
@@ -17,7 +17,7 @@ Before you begin, ensure you have the following installed on your system:
 Navigate to the directory where you want to store the project and clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/WawanWidiantara/Cakrawala-Rent-Car-Backend.git
 cd project
 ```
 
