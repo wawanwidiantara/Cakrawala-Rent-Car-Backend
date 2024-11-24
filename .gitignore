@@ -5,7 +5,8 @@
 /staticfiles
 __pycache__
 db.sqlite3
-media
+project/media
+project/instance
 data
 
 # Environments
