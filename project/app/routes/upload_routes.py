@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, send_from_directory, current_app
+from flask import Blueprint, request, jsonify, send_from_directory, current_app, url_for
 from app.services.ocr_service import extract_id_card
 import os
 import uuid
@@ -31,17 +31,24 @@ def extract_id():
         print(f"Error saving file: {e}")
         return jsonify({"error": "Failed to save file"}), 500
 
+    # Generate the absolute URL for the uploaded file
+    absolute_url = url_for("upload.serve_media_file", filename=unique_filename, _external=True)
+
     # Run OCR extraction
     try:
         extracted_data = extract_id_card(file_path)
+        extracted_data["ktp_url"] = absolute_url
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    return jsonify({"message": "Extraction successful", "data": extracted_data}), 200
+    return jsonify({
+        "message": "Extraction successful",
+        "data": extracted_data,
+    }), 200
+
 
 # Serve media files
 @bp.route("/media/<path:filename>", methods=["GET"])
 def serve_media_file(filename):
-    return send_from_directory("/home/wawanwidiantara/Code/py_code/KTP-Information-Extraction-App/project/media", filename)
-
-
+    media_folder = "/home/wawanwidiantara/Code/py_code/KTP-Information-Extraction-App/project/media"
+    return send_from_directory(media_folder, filename)

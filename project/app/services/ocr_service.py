@@ -1,10 +1,9 @@
-from doctr.models import ocr_predictor
-from doctr.io import DocumentFile
+import easyocr
+import re
+from datetime import datetime
 
 # Initialize the OCR model (do this once)
-model = ocr_predictor(
-    det_arch="fast_small", reco_arch="crnn_mobilenet_v3_small", pretrained=True
-)
+model = easyocr.Reader(['id'])
 
 
 class OCRTextProcessor:
@@ -15,27 +14,19 @@ class OCRTextProcessor:
         """Process OCR result and return corrected text alignments."""
         # Extract all words with their coordinates and text
         words = []
-        for page in result["pages"]:
-            for block in page["blocks"]:
-                for line in block.get("lines", []):
-                    for word in line.get("words", []):
-                        # Get coordinates from geometry
-                        coords = word["geometry"]
-                        # Convert coordinates to more readable format
-                        x1, y1 = coords[0]
-                        x2, y2 = coords[1]
-
-                        words.append(
-                            {
-                                "text": word["value"],
-                                "coords": {
-                                    "y1": float(y1),
-                                    "y2": float(y2),
-                                    "x1": float(x1),
-                                    "x2": float(x2),
-                                },
-                            }
-                        )
+        for item in result:
+            coords_raw, text, confidence = item
+            x1, y1 = coords_raw[0]  # Top-left
+            x2, y2 = coords_raw[2]  # Bottom-right
+            words.append({
+                'text': text,
+                'coords': {
+                    'y1': float(y1),
+                    'y2': float(y2),
+                    'x1': float(x1),
+                    'x2': float(x2)
+                }
+            })
 
         # Sort words by y-coordinate first
         words.sort(key=lambda x: x["coords"]["y1"])
@@ -198,10 +189,12 @@ class TextEntityExtractor:
 
 
 def preprocess_text(text):
+    # Remove non-alphanumeric characters except hyphen (-)
+    text = re.sub(r'[^A-Za-z0-9]', ' ', text)
     # Convert to uppercase
     text = text.upper()
     # Remove single characters
-    text = " ".join(word for word in text.split() if len(word) > 1)
+    text = ' '.join(word for word in text.split() if len(word) > 1)
     # Remove leading and trailing spaces
     text = text.strip()
     return text
@@ -212,6 +205,23 @@ def count_matching_chars(a, char):
             if c in a:
                 count += 1
         return count
+
+def extract_date_and_place(tempat_tgl_lahir):
+        # Regular expression to find 'DD MM YYYY' in the text
+        date_match = re.search(r'\b\d{2}\s\d{2}\s\d{4}\b', tempat_tgl_lahir)
+        if date_match:
+            # Extract the date
+            date = date_match.group()
+            day, month, year = date.split()
+            formatted_date = f"{day}-{month}-{year}"
+            # Extract the place (everything before the date)
+            place = tempat_tgl_lahir[:date_match.start()].strip()
+        else:
+            # If no date, use current date and entire input as place
+            formatted_date = datetime.now().strftime("%d-%m-%Y")
+            place = tempat_tgl_lahir.strip()
+        
+        return formatted_date, place
 
 def correct_agama(agama):
     target_words = ["ISLAM", "KRISTEN", "KATOLIK", "HINDU", "BUDDHA", "KONGHUCU"]
@@ -234,43 +244,25 @@ def correct_status_perkawinan(status_perkawinan):
     most_likely_status_perkawinan = max(match_scores, key=match_scores.get)
     return most_likely_status_perkawinan
 
-def correct_pekerjaan(pekerjaan):
-    target_words = [
-        "BELUM/TIDAK BEKERJA", "MENGURUS RUMAH TANGGA", "PELAJAR/MAHASISWA", "PENSIUNAN",
-        "PEGAWAI NEGERI SIPIL", "TENTARA NASIONAL INDONESIA", "KEPOLISIAN RI", "PERDAGANGAN",
-        "PETANI/PEKEBUN", "PETERNAK", "NELAYAN/PERIKANAN", "INDUSTRI", "KONSTRUKSI", "TRANSPORTASI",
-        "KARYAWAN SWASTA", "KARYAWAN BUMN", "KARYAWAN BUMD", "KARYAWAN HONORER", "BURUH HARIAN LEPAS",
-        "BURUH TANI/PERKEBUNAN", "BURUH NELAYAN/PERIKANAN", "BURUH PETERNAKAN", "PEMBANTU RUMAH TANGGA",
-        "TUKANG CUKUR", "TUKANG LISTRIK", "TUKANG BATU", "TUKANG KAYU", "TUKANG SOL SEPATU",
-        "TUKANG LAS/PANDAI BESI", "TUKANG JAHIT", "TUKANG GIGI", "PENATA RIAS", "PENATA BUSANA",
-        "PENATA RAMBUT", "MEKANIK", "SENIMAN", "TABIB", "PARAJI", "PERANCANG BUSANA", "PENTERJEMAH",
-        "IMAM MASJID", "PENDETA", "PASTOR", "WARTAWAN", "USTADZ/MUBALIGH", "JURU MASAK", "PROMOTOR ACARA",
-        "ANGGOTA DPR-RI", "ANGGOTA DPD", "ANGGOTA BPK", "PRESIDEN", "WAKIL PRESIDEN",
-        "ANGGOTA MAHKAMAH KONSTITUSI", "ANGGOTA KABINET/KEMENTERIAN", "DUTA BESAR", "GUBERNUR",
-        "WAKIL GUBERNUR", "BUPATI", "WAKIL BUPATI", "WALIKOTA", "WAKIL WALIKOTA", "ANGGOTA DPRD PROVINSI",
-        "ANGGOTA DPRD KABUPATEN/KOTA", "DOSEN", "GURU", "PILOT", "PENGACARA", "NOTARIS", "ARSITEK",
-        "AKUNTAN", "KONSULTAN", "DOKTER", "BIDAN", "PERAWAT", "APOTEKER", "PSIKIATER/PSIKOLOG",
-        "PENYIAR TELEVISI", "PENYIAR RADIO", "PELAUT", "PENELITI", "SOPIR", "PIALANG", "PARANORMAL",
-        "PEDAGANG", "PERANGKAT DESA", "KEPALA DESA", "BIARAWATI", "WIRASWASTA"
-    ]
-    pekerjaan = pekerjaan.upper()
-    match_scores = {word: count_matching_chars(pekerjaan, word) for word in target_words}
-    most_likely_pekerjaan = max(match_scores, key=match_scores.get)
-    return most_likely_pekerjaan
-
 def post_processing(data):
-    data['jenis_kelamin'] = correct_jenis_kelamin(data['jenis_kelamin'])
-    data['agama'] = correct_agama(data['agama'])
-    data['pekerjaan'] = correct_pekerjaan(data['pekerjaan'])
-    data['status_perkawinan'] = correct_status_perkawinan(data['status_perkawinan'])
+    if 'jenis_kelamin' in data:
+        data['jenis_kelamin'] = correct_jenis_kelamin(data['jenis_kelamin'])
+    if 'agama' in data:
+        data['agama'] = correct_agama(data['agama'])
+    if 'status_perkawinan' in data:
+        data['status_perkawinan'] = correct_status_perkawinan(data['status_perkawinan'])
+    if 'tempat_tgl_lahir' in data:
+        extracted_date, extracted_place = extract_date_and_place(data['tempat_tgl_lahir'])
+        data['tanggal_lahir'] = extracted_date
+        data['tempat_lahir'] = extracted_place
     return data
 
 
 def extract_id_card(image_path):
     # Read image and pass it to the OCR model
-    single_img_doc = DocumentFile.from_images(image_path)
-    result = model(single_img_doc)
-    ocr_export = result.export()
+    # single_img_doc = DocumentFile.from_images(image_path)
+    # result = model(single_img_doc)
+    ocr_export = model.readtext(image_path)
 
     # Process the OCR results
     processor = OCRTextProcessor()

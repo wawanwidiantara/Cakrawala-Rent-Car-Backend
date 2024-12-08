@@ -10,7 +10,6 @@ bp = Blueprint("auth", __name__, url_prefix="/auth")
 def register():
     data = request.json
     email = data.get("email")
-    phone = data.get("phone")
     password = data.get("password")
     confirm_password = data.get("confirm_password")
     phone = data.get("phone")
@@ -37,4 +36,5 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 401
 
     token = create_access_token(identity=user.id)
-    return jsonify({"token": token}), 200
+    # Return the token to the user and user id account
+    return jsonify({"token": token, "data": {"id_account": user.id}}), 200
