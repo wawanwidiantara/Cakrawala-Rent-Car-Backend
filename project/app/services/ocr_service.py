@@ -88,51 +88,22 @@ class TextEntityExtractor:
     def __init__(self):
         # Define fields with their keywords and tolerance levels
         self.fields = [
-            {"name": "provinsi", "keywords": ["provinsi"], "tolerance": 2},
-            {"name": "kabupaten", "keywords": ["kabupaten", "kota"], "tolerance": 2},
-            {"name": "nik", "keywords": ["nik"], "tolerance": 1},
-            {"name": "nama", "keywords": ["nama"], "tolerance": 1},
-            {
-                "name": "tempat_tgl_lahir",
-                "keywords": [
-                    "tempat/tgl",
-                    "tempat/tgilahir",
-                    "tempat",
-                    "tompat/tgllah",
-                ],
-                "tolerance": 3,
-            },
+            {'name': 'provinsi', 'keywords': ['provinsi'], 'tolerance': 2},
+            {'name': 'kabupaten', 'keywords': ['kabupaten', 'kota'], 'tolerance': 2},
+            {'name': 'nik', 'keywords': ['nik'], 'tolerance': 1},
+            {'name': 'nama', 'keywords': ['nama'], 'tolerance': 1},
+            {'name': 'tempat_tgl_lahir', 'keywords': ['tempat/tgl', 'tempat/tgilahir', 'tempat','tompat/tgllah'], 'tolerance': 3},
             # {'name': 'tanggal_lahir', 'keywords': ['tgl', 'tanggal'], 'tolerance': 2},
-            {
-                "name": "jenis_kelamin",
-                "keywords": ["jenis kelamin", "kelamin"],
-                "tolerance": 2,
-            },
-            {"name": "alamat", "keywords": ["alamat"], "tolerance": 2},
-            {"name": "rt_rw", "keywords": ["rt/rw", "rtrw"], "tolerance": 2},
-            {
-                "name": "kel_desa",
-                "keywords": ["kel/desa", "kelurahan", "desa"],
-                "tolerance": 2,
-            },
-            {"name": "kecamatan", "keywords": ["kecamatan", "kec"], "tolerance": 3},
-            {"name": "agama", "keywords": ["agama"], "tolerance": 2},
-            {
-                "name": "status_perkawinan",
-                "keywords": ["status perkawinan", "perkawinan"],
-                "tolerance": 3,
-            },
-            {"name": "pekerjaan", "keywords": ["pekerjaan", "kerja"], "tolerance": 3},
-            {
-                "name": "kewarganegaraan",
-                "keywords": ["kewarganegaraan"],
-                "tolerance": 4,
-            },
-            {
-                "name": "berlaku_hingga",
-                "keywords": ["berlaku hingga", "hingga"],
-                "tolerance": 3,
-            },
+            {'name': 'jenis_kelamin', 'keywords': ['jenis kelamin', 'kelamin'], 'tolerance': 2},
+            {'name': 'alamat', 'keywords': ['alamat'], 'tolerance': 2},
+            {'name': 'rt_rw', 'keywords': ['rt/rw', 'rtrw'], 'tolerance': 2},
+            {'name': 'kel_desa', 'keywords': ['kel/desa', 'kelurahan', 'desa'], 'tolerance': 2},
+            {'name': 'kecamatan', 'keywords': ['kecamatan', 'kec'], 'tolerance': 3},
+            {'name': 'agama', 'keywords': ['agama'], 'tolerance': 2},
+            {'name': 'status_perkawinan', 'keywords': ['status perkawinan', 'perkawinan'], 'tolerance': 3},
+            {'name': 'pekerjaan', 'keywords': ['pekerjaan', 'kerja'], 'tolerance': 3},
+            {'name': 'kewarganegaraan', 'keywords': ['kewarganegaraan'], 'tolerance': 4},
+            {'name': 'berlaku_hingga', 'keywords': ['berlaku hingga', 'hingga'], 'tolerance': 3}
         ]
 
     def levenshtein_distance(self, s1, s2):
@@ -162,18 +133,18 @@ class TextEntityExtractor:
             return None
 
         best_match = None
-        min_distance = float("inf")
-
+        min_distance = float('inf')
+        
         for field in self.fields:
-            for keyword in field["keywords"]:
+            for keyword in field['keywords']:
                 keyword_parts = keyword.lower().split()
-
+                
                 # Try matching with first word(s) of line
                 for i in range(min(len(words), len(keyword_parts) + 1)):
-                    line_part = " ".join(words[: i + 1])
+                    line_part = ' '.join(words[:i+1])
                     distance = self.levenshtein_distance(line_part, keyword)
-
-                    if distance < min_distance and distance <= field["tolerance"]:
+                    
+                    if distance < min_distance and distance <= field['tolerance']:
                         min_distance = distance
                         best_match = field
 
@@ -183,48 +154,45 @@ class TextEntityExtractor:
         """Extract value from a line based on field type"""
         # Split line into parts
         parts = line.split()
-
+        
         # Find where the field name ends
         field_end = 0
         for i, part in enumerate(parts):
-            for keyword in field["keywords"]:
-                if (
-                    self.levenshtein_distance(part.lower(), keyword.lower())
-                    <= field["tolerance"]
-                ):
+            for keyword in field['keywords']:
+                if self.levenshtein_distance(part.lower(), keyword.lower()) <= field['tolerance']:
                     field_end = i + 1
                     break
-
+        
         # Extract value portion
-        value = " ".join(parts[field_end:]).strip()
-
+        value = ' '.join(parts[field_end:]).strip()
+        
         # Clean up common artifacts
-        value = value.replace(":", "").strip()
-
+        value = value.replace(':', '').strip()
+        
         return value if value else None
 
     def extract_entities(self, lines):
         """Extract entities from list of lines"""
         entities = {}
-
+        
         for line in lines:
             # Skip empty lines
             if not line.strip():
                 continue
-
+            
             # Find matching field
             field = self.find_field_match(line)
             if field:
                 value = self.extract_value(line, field)
                 if value:
                     # Special handling for fields that might have multiple parts
-                    if field["name"] in entities:
-                        if isinstance(entities[field["name"]], list):
-                            entities[field["name"]].append(value)
+                    if field['name'] in entities:
+                        if isinstance(entities[field['name']], list):
+                            entities[field['name']].append(value)
                         else:
-                            entities[field["name"]] = [entities[field["name"]], value]
+                            entities[field['name']] = [entities[field['name']], value]
                     else:
-                        entities[field["name"]] = value
+                        entities[field['name']] = value
 
         return entities
 
@@ -238,21 +206,63 @@ def preprocess_text(text):
     text = text.strip()
     return text
 
+def count_matching_chars(a, char):
+        count = 0
+        for c in char:
+            if c in a:
+                count += 1
+        return count
+
+def correct_agama(agama):
+    target_words = ["ISLAM", "KRISTEN", "KATOLIK", "HINDU", "BUDDHA", "KONGHUCU"]
+    agama = agama.lower()
+    match_scores = {word: count_matching_chars(agama, word.lower()) for word in target_words}
+    most_likely_agama = max(match_scores, key=match_scores.get)
+    return most_likely_agama
+
+def correct_jenis_kelamin(jenis_kelamin):
+    target_words = ["LAKI-LAKI", "PEREMPUAN"]
+    jenis_kelamin = jenis_kelamin.lower()
+    match_scores = {word: count_matching_chars(jenis_kelamin, word.lower()) for word in target_words}
+    most_likely_jenis_kelamin = max(match_scores, key=match_scores.get)
+    return most_likely_jenis_kelamin
+
+def correct_status_perkawinan(status_perkawinan):
+    target_words = ["KAWIN", "BELUM KAWIN", "CERAI HIDUP", "CERAI MATI"]
+    status_perkawinan = status_perkawinan.lower()
+    match_scores = {word: count_matching_chars(status_perkawinan, word.lower()) for word in target_words}
+    most_likely_status_perkawinan = max(match_scores, key=match_scores.get)
+    return most_likely_status_perkawinan
+
+def correct_pekerjaan(pekerjaan):
+    target_words = [
+        "BELUM/TIDAK BEKERJA", "MENGURUS RUMAH TANGGA", "PELAJAR/MAHASISWA", "PENSIUNAN",
+        "PEGAWAI NEGERI SIPIL", "TENTARA NASIONAL INDONESIA", "KEPOLISIAN RI", "PERDAGANGAN",
+        "PETANI/PEKEBUN", "PETERNAK", "NELAYAN/PERIKANAN", "INDUSTRI", "KONSTRUKSI", "TRANSPORTASI",
+        "KARYAWAN SWASTA", "KARYAWAN BUMN", "KARYAWAN BUMD", "KARYAWAN HONORER", "BURUH HARIAN LEPAS",
+        "BURUH TANI/PERKEBUNAN", "BURUH NELAYAN/PERIKANAN", "BURUH PETERNAKAN", "PEMBANTU RUMAH TANGGA",
+        "TUKANG CUKUR", "TUKANG LISTRIK", "TUKANG BATU", "TUKANG KAYU", "TUKANG SOL SEPATU",
+        "TUKANG LAS/PANDAI BESI", "TUKANG JAHIT", "TUKANG GIGI", "PENATA RIAS", "PENATA BUSANA",
+        "PENATA RAMBUT", "MEKANIK", "SENIMAN", "TABIB", "PARAJI", "PERANCANG BUSANA", "PENTERJEMAH",
+        "IMAM MASJID", "PENDETA", "PASTOR", "WARTAWAN", "USTADZ/MUBALIGH", "JURU MASAK", "PROMOTOR ACARA",
+        "ANGGOTA DPR-RI", "ANGGOTA DPD", "ANGGOTA BPK", "PRESIDEN", "WAKIL PRESIDEN",
+        "ANGGOTA MAHKAMAH KONSTITUSI", "ANGGOTA KABINET/KEMENTERIAN", "DUTA BESAR", "GUBERNUR",
+        "WAKIL GUBERNUR", "BUPATI", "WAKIL BUPATI", "WALIKOTA", "WAKIL WALIKOTA", "ANGGOTA DPRD PROVINSI",
+        "ANGGOTA DPRD KABUPATEN/KOTA", "DOSEN", "GURU", "PILOT", "PENGACARA", "NOTARIS", "ARSITEK",
+        "AKUNTAN", "KONSULTAN", "DOKTER", "BIDAN", "PERAWAT", "APOTEKER", "PSIKIATER/PSIKOLOG",
+        "PENYIAR TELEVISI", "PENYIAR RADIO", "PELAUT", "PENELITI", "SOPIR", "PIALANG", "PARANORMAL",
+        "PEDAGANG", "PERANGKAT DESA", "KEPALA DESA", "BIARAWATI", "WIRASWASTA"
+    ]
+    pekerjaan = pekerjaan.upper()
+    match_scores = {word: count_matching_chars(pekerjaan, word) for word in target_words}
+    most_likely_pekerjaan = max(match_scores, key=match_scores.get)
+    return most_likely_pekerjaan
 
 def post_processing(data):
-    import re
-
-    # 1. Update `jenis_kelamin`
-    data["jenis_kelamin"] = (
-        "Laki-laki" if data["jenis_kelamin"].startswith("L") else "Perempuan"
-    )
-
-    # 2. Update `agama`
-    data["agama"] = data["agama"].split()[0]
-
-    # 3. Update `status_perkawinan`
-    data["status_perkawinan"] = re.sub(r"\d+", "", data["status_perkawinan"]).strip()
-
+    data['jenis_kelamin'] = correct_jenis_kelamin(data['jenis_kelamin'])
+    data['agama'] = correct_agama(data['agama'])
+    data['pekerjaan'] = correct_pekerjaan(data['pekerjaan'])
+    data['status_perkawinan'] = correct_status_perkawinan(data['status_perkawinan'])
     return data
 
 

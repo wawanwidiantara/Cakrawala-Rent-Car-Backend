@@ -23,6 +23,7 @@ def create_profile():
         marital_status=data.get("marital_status"),
         nationality=data.get("nationality"),
         photo_url=data.get("photo_url"),
+        ktp_url=data.get("ktp_url"),
     )
     db.session.add(new_profile)
     db.session.commit()

@@ -10,6 +10,7 @@ bp = Blueprint("auth", __name__, url_prefix="/auth")
 def register():
     data = request.json
     email = data.get("email")
+    phone = data.get("phone")
     password = data.get("password")
     confirm_password = data.get("confirm_password")
     phone = data.get("phone")
