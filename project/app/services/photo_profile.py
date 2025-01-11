@@ -6,13 +6,13 @@ cascade_path = os.path.join(os.path.dirname(__file__), "haarcascade_frontalface_
 
 # Extract face from image
 def extract_face(image_path):
+    # Load the cascade
+    face_cascade = cv2.CascadeClassifier(cascade_path)
+
     # Load the image
     image = cv2.imread(image_path)
     image_crop = Image.open(image_path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Load the cascade
-    face_cascade = cv2.CascadeClassifier(cascade_path)
 
     # Detect faces
     faces = face_cascade.detectMultiScale(
@@ -20,17 +20,23 @@ def extract_face(image_path):
         scaleFactor=1.1,
         minNeighbors=2,
         minSize=(40, 60),
-        flags = cv2.CASCADE_SCALE_IMAGE
+        flags=cv2.CASCADE_SCALE_IMAGE
     )
 
-    # If no faces are detected, return None
-    if len(faces) == 0:
-        return image
+    # Check if faces are detected
+    if len(faces) == 0 or len(faces) > 1:
+        print("No faces detected!")
+        return None
 
-    # Draw a rectangle around the faces
-    for (x, y, w, h) in faces:
-        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
+    # Process the first detected face
+    x, y, w, h = faces[0]
 
-    # Crop
-    im_crop = image_crop.crop((x-20, y-20, (x+w+20), (y+h+20)))
+    # Crop the face with padding
+    padding = 20
+    left = max(x - padding, 0)
+    top = max(y - padding, 0)
+    right = min(x + w + padding, image_crop.width)
+    bottom = min(y + h + padding, image_crop.height)
+
+    im_crop = image_crop.crop((left, top, right, bottom))
     return im_crop

@@ -20,6 +20,7 @@ class Profile(db.Model):
     gender = db.Column(db.String(10), nullable=False)
     religion = db.Column(db.String(15), nullable=False)
     marital_status = db.Column(db.String(50), nullable=False)
+    occupation = db.Column(db.String(50), nullable=True)
     nationality = db.Column(db.String(10), nullable=False)
     ktp_url = db.Column(db.String, nullable=True)
     photo_url = db.Column(db.String, nullable=True)

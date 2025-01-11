@@ -21,9 +21,9 @@ def create_profile():
 
     # Convert dob to a Python date object
     try:
-        dob = datetime.strptime(data.get("dob"), "%Y-%m-%d").date()
+        dob = datetime.strptime(data.get("dob"), "%d-%m-%Y").date()
     except ValueError:
-        return jsonify({"error": "Invalid date format for dob. Use YYYY-MM-DD."}), 400
+        return jsonify({"error": "Invalid date format for dob. Use DD-MM-YYYY."}), 400
 
     # Save profile data
     new_profile = Profile(
@@ -36,6 +36,7 @@ def create_profile():
         religion=data.get("religion"),
         marital_status=data.get("marital_status"),
         nationality=data.get("nationality"),
+        occupation=data.get("occupation"),
         photo_url=data.get("photo_url"),
         ktp_url=data.get("ktp_url"),
     )
@@ -84,6 +85,7 @@ def get_user_info(user_id):
             "gender": profile.gender if profile else None,
             "religion": profile.religion if profile else None,
             "marital_status": profile.marital_status if profile else None,
+            "occupation": profile.occupation if profile else None,
             "nationality": profile.nationality if profile else None,
             "photo_url": profile.photo_url if profile else None,
             "ktp_url": profile.ktp_url if profile else None,
